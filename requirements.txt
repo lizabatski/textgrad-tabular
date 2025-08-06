@@ -1,0 +1,8 @@
+# packages
+pandas>=1.3
+
+# LLM interface
+openai>=0.27
+
+# prompt/instance-based optimization
+textgrad>=0.1
