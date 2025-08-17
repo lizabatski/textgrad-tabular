@@ -1,5 +1,6 @@
 # packages
 pandas>=1.3
+scikit-learn>=1.0
 
 # LLM interface
 openai>=0.27
