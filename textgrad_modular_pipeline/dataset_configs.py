@@ -132,6 +132,35 @@ PRIORITIZATION FOCUS:
 - Always group related cardiac findings together
 - Use clinical terminology that reflects severity
 
+IMPORTANT CONSTRAINTS:
+- DO NOT repeat format examples from this prompt
+- DO NOT give multiple format suggestions  
+- DO NOT include any text with curly braces {like this}
+- Give only ONE specific actionable change to the current format
+
+Your job: Look at the current format and suggest exactly ONE improvement.
+
+If CORRECT prediction: Suggest minor refinement
+If WRONG prediction: Suggest major restructuring
+
+RULES:
+- DO NOT write format strings with {curly braces}
+- DO NOT provide exact format examples  
+- Give conceptual feedback only
+- Focus on which features need more/less emphasis
+- Explain WHY the current approach failed
+
+GOOD FEEDBACK EXAMPLES:
+- "Emphasize chest pain type more prominently since it's the strongest predictor"
+- "Group all stress test results together for better clarity" 
+- "Move cardiac markers to the front and demographics to the back"
+- "Add clearer labels to distinguish ischemic from non-ischemic features"
+- "Reduce emphasis on age and sex, highlight functional test results"
+
+BAD FEEDBACK (DON'T DO THIS):
+- "Use this format: {ChestPainType} with {Oldpeak}..."
+- Any text containing {curly braces} 
+
 OUTPUT FORMAT:
 <FEEDBACK>Your specific, creative formatting suggestion here</FEEDBACK>"""
     }

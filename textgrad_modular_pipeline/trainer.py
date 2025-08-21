@@ -154,9 +154,10 @@ def train_epoch(
             epoch_feedbacks.append(feedback_log)
             batch_feedbacks.append(feedback_log)
 
-            # only accumulate loss if not skipping and prediction is wrong
-            if not skip_optimizer and prediction != true_label:
-                total_loss = loss if total_loss is None else tg.sum([total_loss, loss])
+            # only accumulate loss if not skipping and prediction is wrong - this is a flaw I am getting rid of this
+            
+            total_loss = loss if total_loss is None else tg.sum([total_loss, loss])
+            
             print(f"  Loss accumulated: {'No (skipped or correct)' if skip_optimizer or prediction == true_label else 'Yes'}")
 
         batch_accuracy = batch_correct / len(batch_data)
@@ -250,7 +251,8 @@ def train_with_validation(
         "epochs": [],
         "best_format": None,
         "best_val_accuracy": 0,
-        "final_test_accuracy": 0
+        "final_test_accuracy": 0, 
+        "accuracy_history": [] 
     }
 
     print("="*70)
@@ -329,6 +331,13 @@ def train_with_validation(
                 break
 
         epoch_results["val_accuracy"] = val_accuracy
+        accuracy_record = {
+            "epoch": epoch + 1,
+            "train_accuracy": epoch_results["train_accuracy"],
+            "val_accuracy": val_accuracy,
+            "current_format": serialization_format.value
+        }
+        all_results["accuracy_history"].append(accuracy_record)
         all_results["epochs"].append(epoch_results)
 
         print(f"\nEPOCH {epoch + 1} SUMMARY")
@@ -366,5 +375,19 @@ def train_with_validation(
     print(f"\nTraining complete. Best format: {best_format}")
     print(f"Validation Accuracy: {best_val_accuracy:.1%}")
     print(f"Test Accuracy: {test_accuracy:.1%}")
+
+    with open("textgrad_accuracy_history.json", "w") as f:
+        json.dump(all_results["accuracy_history"], f, indent=2)
+
+
+    with open("textgrad_training_summary.json", "w") as f:
+        json.dump({
+            "best_format": all_results["best_format"],
+            "best_val_accuracy": all_results["best_val_accuracy"],
+            "final_test_accuracy": all_results["final_test_accuracy"],
+            "total_epochs": len(all_results["epochs"]),
+            "dataset_name": dataset_name,
+            "provider": provider
+        }, f, indent=2)
 
     return all_results

@@ -4,7 +4,7 @@ from openai import OpenAI
 from textgrad.engine.local_model_openai_api import ChatExternalClient
 
 def get_engines():
-    provider = os.getenv("TEXTGRAD_PROVIDER", "deepseek").lower()
+    provider = os.getenv("TEXTGRAD_PROVIDER", "openai").lower()
 
     if provider == "deepseek":
         deepseek_key = os.getenv("DEEPSEEK_API_KEY")
