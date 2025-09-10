@@ -15,11 +15,9 @@ def evaluate(model, data, extract_prediction):
     return correct / len(data)
 
 def extract_prediction(pred_text: str, dataset_name: str = "iris") -> str:
-    """Extract prediction from model output based on dataset"""
     config = get_dataset_config(dataset_name)
     pred_text = pred_text.lower().strip()
     
-    # Try exact match first
     for class_name in config["classes"]:
         if pred_text == class_name.lower() or class_name.lower() in pred_text:
             return class_name.lower()
@@ -32,22 +30,18 @@ def extract_prediction(pred_text: str, dataset_name: str = "iris") -> str:
             elif any(word in pred_text for word in ["no_disease", "healthy", "negative", "no", "0", "normal"]):
                 return "normal" 
     
-    # ff no match found, return unknown
     return "unknown"
 
 def safe_format(template: str, sample: dict, dataset_name: str = "iris") -> str:
-    """Format input data correctly, falls back to comma separated list"""
     try:
         return template.format(**sample)
     except Exception as e:
         print(f"Format error: {e}")
-        # Create fallback format based on dataset features
         config = get_dataset_config(dataset_name)
         values = [str(sample.get(feature, "N/A")) for feature in config["features"]]
         return ",".join(values)
 
 def validate_format(format_string: str, sample: dict) -> tuple:
-    """Validate that a format string works"""
     try:
         result = format_string.format(**sample)
         return True, result

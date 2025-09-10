@@ -12,15 +12,15 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.naive_bayes import GaussianNB
 from sklearn.svm import SVC
 
-# Load and shuffle data
+# load and shuffle
 df = pd.read_csv("datasets/Iris.csv")
 random.seed(42)
 
-# Extract features and labels
+
 X = df[["SepalLengthCm", "SepalWidthCm", "PetalLengthCm", "PetalWidthCm"]]
 y = df["Species"].str.split("-").str[-1].str.lower()
 
-# Encode labels numerically
+
 le = LabelEncoder()
 y_encoded = le.fit_transform(y)
 
@@ -28,7 +28,7 @@ y_encoded = le.fit_transform(y)
 X_train, X_temp, y_train, y_temp = train_test_split(X, y_encoded, test_size=0.4, random_state=42, stratify=y_encoded)
 X_val, X_test, y_val, y_test = train_test_split(X_temp, y_temp, test_size=0.5, random_state=42, stratify=y_temp)
 
-# Define models to test
+# define models to test
 models = {
     "KNN (k=5)": KNeighborsClassifier(n_neighbors=5),
     "Decision Tree": DecisionTreeClassifier(random_state=42),
@@ -38,7 +38,7 @@ models = {
     "SVM (RBF)": SVC(kernel='rbf', probability=True)
 }
 
-# Evaluate each model
+# evaluate each model
 print("=== Baseline Model Results ===")
 for name, model in models.items():
     model.fit(X_train, y_train)

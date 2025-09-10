@@ -7,7 +7,7 @@ from .utils import extract_prediction, safe_format, validate_format, track_forma
 from .simple_logger import SimpleLogger
 from .dataset_configs import get_dataset_config
 from typing import List, Tuple, Dict
-
+from textgrad.optimizer.optimizer import get_gradient_and_context_text
 
 def evaluate_dataset(data, dataset_type="test", verbose=False, serialization_format=None, 
                     generator_model=None, dataset_name="iris"):
@@ -63,6 +63,7 @@ def train_epoch(
     print(f"\n{'='*50}")
     print(f"EPOCH {epoch + 1}")
     print(f"{'='*50}")
+    print(f"Current system prompt: {generator_model.system_prompt.value}")
     print(f"Training samples in this epoch: {len(shuffled_train)}")
     print(f"Number of batches: {num_batches}")
 
@@ -74,6 +75,7 @@ def train_epoch(
 
         print(f"\n=== Batch {batch_idx + 1}/{num_batches} ===")
         print(f"Current format: {serialization_format.value}")
+        print(f"Current system prompt: {generator_model.system_prompt.value}")
 
         format_before_batch = serialization_format.value
         total_loss = None
@@ -112,20 +114,20 @@ def train_epoch(
                 dataset_name
             )
 
+           
+             
             evaluation_input = tg.Variable(
-                f"{generator_output.value}\n\nContext:\n{dynamic_context}",
-                role_description="Combined evaluation input",
-                predecessors=[generator_output]
+                f"PREDICTION: {prediction}\nACTUAL: {true_label}\nRESULT: {'CORRECT' if prediction == true_label else 'INCORRECT'}\nFormat used: {serialization_format.value}",
+                role_description="Classification result for evaluation",
+                predecessors=[serialization_format]
             )
 
-            print(f"  Calling evaluator for feedback...")
-            loss = evaluator_loss_fn(evaluation_input)
+            loss = evaluator_loss_fn(evaluation_input) 
 
+            
             raw_feedback = loss.value
-            print(f"  Evaluator raw output:\n{loss.value}")
-
             match = re.search(r"<FEEDBACK>(.*?)</FEEDBACK>", raw_feedback, re.DOTALL)
-            extracted_feedback = match.group(1).strip() if match else "NO FEEDBACK FOUND"
+            extracted_feedback = match.group(1).strip() if match else raw_feedback
 
             # debugging and noticed that not everything I wanted was being logged - Don't skip logging, just mark for skipping optimizer
             skip_optimizer = False
@@ -145,34 +147,38 @@ def train_epoch(
                 "prediction": prediction,
                 "true_label": true_label,
                 "serialization_format_before": format_before_sample,
+                "system_prompt_before": generator_model.system_prompt.value,
                 "raw_feedback": raw_feedback,
                 "extracted_feedback": extracted_feedback,
                 "correct": prediction == true_label,
-                "feedback_skipped": skip_optimizer
             }
 
             epoch_feedbacks.append(feedback_log)
             batch_feedbacks.append(feedback_log)
 
-            # only accumulate loss if not skipping and prediction is wrong - this is a flaw I am getting rid of this
             
-            total_loss = loss if total_loss is None else tg.sum([total_loss, loss])
+            if not skip_optimizer:
+                total_loss = loss if total_loss is None else tg.sum([total_loss, loss])
             
-            print(f"  Loss accumulated: {'No (skipped or correct)' if skip_optimizer or prediction == true_label else 'Yes'}")
+            print(f"  Loss accumulated: {'No (skipped)' if skip_optimizer else 'Yes'}")
 
         batch_accuracy = batch_correct / len(batch_data)
         print(f"\nBatch {batch_idx + 1} Summary:")
         print(f"  Batch accuracy: {batch_accuracy:.1%} ({batch_correct}/{len(batch_data)} correct)")
 
-        # FIXED VERSION - Move logging outside optimizer block
-        current_format_after_batch = serialization_format.value  # Capture current format
+        
+        current_format_after_batch = serialization_format.value  # capture current format
 
-        # Handle optimizer step if needed
+       
         if total_loss and optimizer:
             print("Backpropagating combined loss...")
             total_loss.backward()
             try:
+                
                 print("Optimizer stepping...")
+                for param in optimizer.parameters:
+                    gradient_text = get_gradient_and_context_text(param)
+                    print(f"  Gradient text for {param.role_description}: {gradient_text}")
                 optimizer.step()
                 print("  Format update attempted!")
 
@@ -204,6 +210,7 @@ def train_epoch(
         print(f"  Logging {len(batch_feedbacks)} samples from this batch...")
         for log in batch_feedbacks:
             log["serialization_format_after"] = current_format_after_batch
+            log["system_prompt_after"] = generator_model.system_prompt.value
             
             if logger:
                 logger.log_step(
@@ -212,7 +219,7 @@ def train_epoch(
                     log["serialization_format_before"], log["raw_feedback"], 
                     current_format_after_batch, log["correct"]
                 )
-                print(f"    Logged sample {log['sample']}: {log['prediction']} ({'✓' if log['correct'] else '✗'})")
+                print(f"    Logged sample {log['sample']}: {log['prediction']} ({'Correct' if log['correct'] else 'Incorrect'})")
 
     # Return statement at proper function level
     epoch_train_acc = epoch_correct / epoch_total if epoch_total > 0 else 0
@@ -230,11 +237,13 @@ def train_with_validation(
     serialization_format: tg.Variable,
     generator_model,
     evaluator_loss_fn,
-    num_epochs: int = 5,
+    optimizer,
+    num_epochs: int = 2,
     batch_size: int = 3,
     seen_formats=None,
     provider="unknown",
-    dataset_name: str = "iris"
+    dataset_name: str = "iris",
+    optimize_mode: str = "format"
 ):
 
     logger = SimpleLogger()
@@ -243,6 +252,8 @@ def train_with_validation(
         seen_formats = set()
 
     best_format = serialization_format.value
+    best_system_prompt = generator_model.system_prompt.value
+
     best_val_accuracy = 0
     no_improve_epochs = 0
     early_stop_patience = 3
@@ -260,6 +271,7 @@ def train_with_validation(
     print("="*70)
     print(f"  - Dataset: {dataset_name}")
     print(f"  - Provider: {provider}")
+    print(f"  - Optimization mode: {optimize_mode}")
     print(f"  - Total epochs: {num_epochs}")
     print(f"  - Batch size: {batch_size}")
     print(f"  - Train samples: {len(train_data)}")
@@ -267,26 +279,6 @@ def train_with_validation(
     print(f"  - Test samples: {len(test_data)}")
     print(f"\nInitial serialization format:\n  {serialization_format.value}")
     print("="*70)
-
-    # get dataset-specific constraints for optimizer
-    config = get_dataset_config(dataset_name)
-    feature_placeholders = "{" + "}, {".join(config["features"]) + "}"
-    
-    optimizer = tg.TextualGradientDescent(
-        parameters=[serialization_format],
-        constraints=[
-            f"Your job is to generate a new Python .format() string for serializing a {dataset_name} sample.",
-            "Use the suggestion provided in the <FEEDBACK> tag to guide your rewrite.",
-            f"Always return a single-line human-readable string that uses the placeholders: {feature_placeholders}.",
-            "Focus on improving class discriminability and clarity.",
-            "The output format MUST be compatible with Python's .format() method.",
-            "DO NOT include class labels, predictions, or actuals in the format.",
-            "NEVER use double braces {{ or }} — use only single braces.",
-            "Avoid repeating the previous format unless it's explicitly requested.",
-            f"Example valid format: '{config['default_format']}'"
-        ],
-        new_variable_tags=["<FEEDBACK>", "</FEEDBACK>"]
-    )
 
     for epoch in range(num_epochs):
         epoch_start_time = pd.Timestamp.now()
@@ -320,6 +312,7 @@ def train_with_validation(
             best_val_accuracy = val_accuracy
             no_improve_epochs = 0
             best_format = serialization_format.value
+            best_system_prompt = generator_model.system_prompt.value
             print("\n NEW BEST VALIDATION ACCURACY!")
             print(f"   Previous best: {all_results['best_val_accuracy']:.1%}")
             print(f"   New best: {best_val_accuracy:.1%}")
@@ -335,7 +328,8 @@ def train_with_validation(
             "epoch": epoch + 1,
             "train_accuracy": epoch_results["train_accuracy"],
             "val_accuracy": val_accuracy,
-            "current_format": serialization_format.value
+            "current_format": serialization_format.value,
+            "current_system_prompt": generator_model.system_prompt.value
         }
         all_results["accuracy_history"].append(accuracy_record)
         all_results["epochs"].append(epoch_results)
@@ -362,6 +356,7 @@ def train_with_validation(
     )
 
     all_results["best_format"] = best_format
+    all_results["best_system_prompt"] = best_system_prompt
     all_results["best_val_accuracy"] = best_val_accuracy
     all_results["final_test_accuracy"] = test_accuracy
 
@@ -379,15 +374,16 @@ def train_with_validation(
     with open("textgrad_accuracy_history.json", "w") as f:
         json.dump(all_results["accuracy_history"], f, indent=2)
 
-
     with open("textgrad_training_summary.json", "w") as f:
         json.dump({
             "best_format": all_results["best_format"],
+            "best_system_prompt": all_results["best_system_prompt"],
             "best_val_accuracy": all_results["best_val_accuracy"],
             "final_test_accuracy": all_results["final_test_accuracy"],
             "total_epochs": len(all_results["epochs"]),
             "dataset_name": dataset_name,
-            "provider": provider
+            "provider": provider,
+            "optimize_mode": optimize_mode
         }, f, indent=2)
 
     return all_results

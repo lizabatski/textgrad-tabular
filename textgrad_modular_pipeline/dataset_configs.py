@@ -1,51 +1,26 @@
 
 DATASET_CONFIGS = {
-    "iris": {
-        "features": ["sepal_length", "sepal_width", "petal_length", "petal_width"],
-        "classes": ["setosa", "versicolor", "virginica"],
-        "default_format": "Petal Length:{petal_length:.1f} Petal Width:{petal_width:.1f} Sepal Length:{sepal_length:.1f} Sepal Width:{sepal_width:.1f}",
-        "system_prompt": """You are an expert botanist, please classify Iris flowers into one of three species: setosa, versicolor, or virginica.
+   "iris": {
+    "features": ["sepal_length", "sepal_width", "petal_length", "petal_width"],
+    "classes": ["setosa", "versicolor", "virginica"],
+    "default_format": "The petal length is {petal_length:.1f}. The petal width is {petal_width:.1f}. The sepal length is {sepal_length:.1f}. The sepal width is {sepal_width:.1f}",
+    "system_prompt": """Classify this Iris flower as: setosa, versicolor, or virginica.""",
+    "evaluator_prompt": """Evaluate this Iris classification result. If incorrect, suggest how to improve the classification prompt.
 
-Setosa: Petal length <= 2.0 cm, petal width <= 0.6 cm, sepal length < 6.0 cm, sepal width >= 2.3 cm
-Versicolor: Petal length >= 3.5 cm, petal width >= 0.9 cm, sepal width <= 3.4 cm
-Virginica: Petal length >= 4.0 cm, petal width >= 1.3 cm, sepal width <= 3.8 cm
+Consider approaches like:
+- Creative reasoning about biological relationships
+- Pattern discovery with feature combinations  
+- Contextual thinking using domain knowledge
+- Better confidence handling for uncertain cases
+- Holistic analysis of the complete measurement profile
 
-Petal measurements are more informative than sepal measurements.""",
-        "evaluator_prompt": """You are an expert in prompt optimization for Iris flower classification.
+Choose the most relevant approach for fixing this specific error and provide a concrete suggestion.
 
-EVALUATION TASK: Analyze the classification result and current serialization format's effectiveness.
-
-IF PREDICTION IS CORRECT:
-- The current format is working well
-- Only suggest MINOR improvements in natural language
-- Consider keeping the format as-is
-
-IF PREDICTION IS INCORRECT:
-- Suggest how to emphasize more discriminative features
-- Suggest changes in feature order, unit usage, or clarity
-- Emphasize petal features over sepal features when relevant
-
-DOMAIN KNOWLEDGE:
-- Setosa: petal length <= 2.0 cm, petal width <= 0.6 cm
-- Versicolor: petal length >= 3.5 cm, petal width >= 0.9 cm
-- Virginica: petal length >= 4.0 cm, petal width >= 1.3 cm
-- Petal features are more informative than sepal features
-
-IMPORTANT:
-- DO NOT include Python `.format()` strings in your response.
-- DO NOT generate output like: 'Petal Length: {petal_length:.1f} cm...'
-- Only describe **in words** what needs to change.
-
-OUTPUT FORMAT:
-<FEEDBACK>Your natural language suggestion here</FEEDBACK>
-
-Examples:
-<FEEDBACK>Focus more on petal features; consider reducing emphasis on sepal length</FEEDBACK><CONFIDENCE>0.8</CONFIDENCE>
-<FEEDBACK>No changes needed; format is concise and informative</FEEDBACK><CONFIDENCE>0.1</CONFIDENCE>"""
-    },
+<FEEDBACK>Your targeted suggestion here</FEEDBACK>"""
+},
     
 "heart": {
-        # Updated to match your EXACT dataset features
+    
         "features": ["Age", "Sex", "ChestPainType", "RestingBP", "Cholesterol", 
                     "FastingBS", "RestingECG", "MaxHR", "ExerciseAngina", 
                     "Oldpeak", "ST_Slope"],

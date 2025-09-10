@@ -4,7 +4,6 @@ from typing import List, Tuple, Dict, Any
 import os
 
 def load_iris_dataset(path: str = "datasets/Iris.csv", seed: int = 42) -> Tuple[List[Tuple[dict, str]], List[Tuple[dict, str]], List[Tuple[dict, str]]]:
-    """Load and split Iris dataset"""
     df = pd.read_csv(path)
     random.seed(seed)
     
@@ -26,7 +25,6 @@ def load_iris_dataset(path: str = "datasets/Iris.csv", seed: int = 42) -> Tuple[
     return data[:int(0.6*n)], data[int(0.6*n):int(0.8*n)], data[int(0.8*n):]
 
 def load_heart_dataset(path: str = "datasets/heart.csv", seed: int = 42) -> Tuple[List[Tuple[dict, str]], List[Tuple[dict, str]], List[Tuple[dict, str]]]:
-    """Load and split Heart Disease dataset with correct feature mapping"""
     df = pd.read_csv(path)
     random.seed(seed)
 
