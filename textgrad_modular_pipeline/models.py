@@ -91,23 +91,23 @@ def init_models(generator_engine, evaluator_engine, optimizer_engine, dataset_na
             "DO NOT return feedback or explanations - only the improved prompt in the tags."
         ]
         
-        # custom_system_prompt = """You are a system prompt optimizer for classification models.
+        custom_system_prompt = """You are a system prompt optimizer for classification models.
 
-        # You receive:
-        # 1. A current system prompt for a classifier
-        # 2. Feedback about classification performance
+        You receive:
+        1. A current system prompt for a classifier
+        2. Feedback about classification performance
 
-        # Your task: Generate an improved system prompt that addresses the feedback.
+        Your task: Generate an improved system prompt that addresses the feedback.
 
-        # You must respond with ONLY the improved system prompt wrapped in {new_variable_start_tag} and {new_variable_end_tag} tags.
+        You must respond with ONLY the improved system prompt wrapped in {new_variable_start_tag} and {new_variable_end_tag} tags.
 
-        # Focus on:
-        # - Clearer classification instructions
-        # - Better feature importance guidance  
-        # - More precise decision rules
-        # - Improved clarity and specificity
+        Focus on:
+        - Clearer classification instructions
+        - Better feature importance guidance  
+        - More precise decision rules
+        - Improved clarity and specificity
 
-        # Do not explain your reasoning. Just provide the improved prompt."""
+        Do not explain your reasoning. Just provide the improved prompt."""
         
     elif optimize_mode == "both":
         optimizer_params = [serialization_format, generator_system_prompt]
@@ -131,11 +131,12 @@ def init_models(generator_engine, evaluator_engine, optimizer_engine, dataset_na
 
         Do not explain your reasoning. Just provide the improvements."""
 
+    
     optimizer = tg.TextualGradientDescent(
-        parameters=optimizer_params,
+        #parameters=optimizer_params,
+        parameters=list(generator_model.parameters()),
         constraints=optimizer_constraints,
-        new_variable_tags=["<IMPROVED_VARIABLE>", "</IMPROVED_VARIABLE>"],
-        #optimizer_system_prompt=custom_system_prompt
+        new_variable_tags=["<IMPROVED_VARIABLE>", "</IMPROVED_VARIABLE>"]
     )
     
     print(f"Initialized with optimization mode: {optimize_mode}")

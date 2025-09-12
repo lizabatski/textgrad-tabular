@@ -53,10 +53,32 @@ def load_heart_dataset(path: str = "datasets/heart.csv", seed: int = 42) -> Tupl
     n = len(data)
     return data[:int(0.6 * n)], data[int(0.6 * n):int(0.8 * n)], data[int(0.8 * n):]
 
+def load_synthetic_dataset(path: str = "datasets/synthetic_dataset.csv", seed: int = 42) -> Tuple[List[Tuple[dict, str]], List[Tuple[dict, str]], List[Tuple[dict, str]]]:
+    """Load synthetic dataset from CSV"""
+    df = pd.read_csv(path)
+    random.seed(seed)
+    
+    data = []
+    for _, row in df.iterrows():
+        features = {
+            "feature_0": row.feature_0,
+            "feature_1": row.feature_1,
+            "feature_2": row.feature_2,
+            "feature_3": row.feature_3,
+        }
+        label = row['class']  # Should be class_0, class_1, class_2
+        data.append((features, label))
+    
+    random.shuffle(data)
+    
+    n = len(data)
+    return data[:int(0.6*n)], data[int(0.6*n):int(0.8*n)], data[int(0.8*n):]
+
 def get_dataset_loader(dataset_name: str):
     loaders = {
         "iris": load_iris_dataset,
-        "heart": load_heart_dataset
+        "heart": load_heart_dataset,
+        "synthetic": load_synthetic_dataset  
     }
     
     if dataset_name.lower() not in loaders:
@@ -65,17 +87,17 @@ def get_dataset_loader(dataset_name: str):
     return loaders[dataset_name.lower()]
 
 def load_dataset(dataset_name: str, dataset_path: str = None, seed: int = 42) -> Tuple[List[Tuple[dict, str]], List[Tuple[dict, str]], List[Tuple[dict, str]]]:
-    """Load any supported dataset"""
     loader = get_dataset_loader(dataset_name)
     
     if dataset_path is None:
         default_paths = {
             "iris": "datasets/Iris.csv",
-            "heart": "datasets/heart.csv"
+            "heart": "datasets/heart.csv",
+            "synthetic": "datasets/synthetic_dataset.csv" 
         }
         dataset_path = default_paths[dataset_name.lower()]
     
-    # Check if file exists
+    
     if not os.path.exists(dataset_path):
         raise FileNotFoundError(f"Dataset file not found: {dataset_path}")
     

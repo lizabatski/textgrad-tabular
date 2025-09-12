@@ -7,6 +7,7 @@ DATASET_CONFIGS = {
     "system_prompt": """Classify this Iris flower as: setosa, versicolor, or virginica.""",
     "evaluator_prompt": """Evaluate this Iris classification result. If incorrect, suggest how to improve the classification prompt.
 
+    
 Consider approaches like:
 - Creative reasoning about biological relationships
 - Pattern discovery with feature combinations  
@@ -15,9 +16,32 @@ Consider approaches like:
 - Holistic analysis of the complete measurement profile
 
 Choose the most relevant approach for fixing this specific error and provide a concrete suggestion.
-
-<FEEDBACK>Your targeted suggestion here</FEEDBACK>"""
+"""
 },
+
+"synthetic": {
+    "features": ["feature_0", "feature_1", "feature_2", "feature_3"],
+    "classes": ["class_0", "class_1", "class_2"],  #
+    "default_format": "Feature 0: {feature_0:.1f}, Feature 1: {feature_1:.1f}, Feature 2: {feature_2:.1f}, Feature 3: {feature_3:.1f}",
+    
+    "system_prompt": """Classify this data sample as: class_0, class_1, or class_2.""",
+    
+    "evaluator_prompt": """Evaluate this data classification result. If incorrect, suggest how to improve the classification prompt.
+
+Consider approaches like:
+- Creative reasoning about relationships
+- Pattern discovery with feature combinations  
+- Contextual thinking using domain knowledge
+- Better confidence handling for uncertain cases
+- Holistic analysis of the complete measurement profile
+- Feature threshold identification 
+- Pattern discovery with feature combinations
+- Numerical reasoning about decision boundaries
+- Focus on most discriminative features
+
+Choose the most relevant approach for fixing this specific error and provide a concrete suggestion."""
+},
+
     
 "heart": {
     

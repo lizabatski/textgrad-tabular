@@ -91,10 +91,10 @@ def train_epoch(
             classification_prompt = tg.Variable(
                 f"Classify this {dataset_name} sample:\n{formatted_input}\n\nClass:",
                 role_description="Classification prompt",
-                predecessors=[serialization_format]
+                predecessors=[generator_model.system_prompt]
             )
 
-            print(f"  Calling generator...")
+            #print(f"  Calling generator...")
             generator_output = generator_model(classification_prompt)
             prediction = extract_prediction(generator_output.value, dataset_name)
 
@@ -119,10 +119,14 @@ def train_epoch(
             evaluation_input = tg.Variable(
                 f"PREDICTION: {prediction}\nACTUAL: {true_label}\nRESULT: {'CORRECT' if prediction == true_label else 'INCORRECT'}\nFormat used: {serialization_format.value}",
                 role_description="Classification result for evaluation",
-                predecessors=[serialization_format]
+                predecessors=[generator_output, generator_model.system_prompt]
             )
 
+    
+
             loss = evaluator_loss_fn(evaluation_input) 
+
+            #loss = evaluator_loss_fn(generator_output)
 
             
             raw_feedback = loss.value
@@ -137,21 +141,21 @@ def train_epoch(
                 print("  Detected redundant/no-change feedback - will skip optimizer step but still log.")
                 skip_optimizer = True
 
-            print(f"  Evaluator feedback: {extracted_feedback}")
+            #print(f"  Evaluator feedback: {extracted_feedback}")
 
             feedback_log = {
-                "epoch": epoch,
-                "batch": batch_idx,
-                "sample": i,
-                "formatted_input": formatted_input,
-                "prediction": prediction,
-                "true_label": true_label,
-                "serialization_format_before": format_before_sample,
-                "system_prompt_before": generator_model.system_prompt.value,
-                "raw_feedback": raw_feedback,
-                "extracted_feedback": extracted_feedback,
-                "correct": prediction == true_label,
-            }
+            "epoch": epoch,
+            "batch": batch_idx,
+            "sample": i,
+            "formatted_input": formatted_input,
+            "prediction": prediction,
+            "true_label": true_label,
+            "serialization_format_before": format_before_sample,
+            "system_prompt_before": generator_model.system_prompt.value,  # This
+            "raw_feedback": raw_feedback,
+            "extracted_feedback": extracted_feedback,
+            "correct": prediction == true_label,
+        }
 
             epoch_feedbacks.append(feedback_log)
             batch_feedbacks.append(feedback_log)
@@ -216,8 +220,8 @@ def train_epoch(
                 logger.log_step(
                     log["epoch"], log["batch"], log["sample"], 
                     log["formatted_input"], log["prediction"], log["true_label"],
-                    log["serialization_format_before"], log["raw_feedback"], 
-                    current_format_after_batch, log["correct"]
+                    log["system_prompt_before"], log["extracted_feedback"], 
+                    log["system_prompt_after"], log["correct"]
                 )
                 print(f"    Logged sample {log['sample']}: {log['prediction']} ({'Correct' if log['correct'] else 'Incorrect'})")
 
@@ -243,8 +247,13 @@ def train_with_validation(
     seen_formats=None,
     provider="unknown",
     dataset_name: str = "iris",
-    optimize_mode: str = "format"
+    optimize_mode: str = "prompt",
+    job_id: str = None
 ):
+    
+    if job_id is None:
+        import uuid
+        job_id = str(uuid.uuid4())[:8]
 
     logger = SimpleLogger()
 
@@ -302,7 +311,7 @@ def train_with_validation(
 
         # Evaluate on validation set
         val_accuracy = evaluate_dataset(
-            val_data, "validation", verbose=True, 
+            val_data, "validation", verbose=False, 
             serialization_format=serialization_format,
             generator_model=generator_model,
             dataset_name=dataset_name
@@ -349,7 +358,7 @@ def train_with_validation(
 
     # evaluate on test set
     test_accuracy = evaluate_dataset(
-        test_data, "test", verbose=True,
+        test_data, "test", verbose=False,
         serialization_format=serialization_format,
         generator_model=generator_model,
         dataset_name=dataset_name
@@ -361,7 +370,8 @@ def train_with_validation(
     all_results["final_test_accuracy"] = test_accuracy
 
     # save the existing logs
-    with open("textgrad_feedback_logs.json", "w") as f:
+    feedback_filename = f"textgrad_feedback_logs_{job_id}.json"
+    with open(feedback_filename, "w") as f:
         json.dump(all_feedback_logs, f, indent=2)
 
     # save the SimpleLogger logs
@@ -370,11 +380,13 @@ def train_with_validation(
     print(f"\nTraining complete. Best format: {best_format}")
     print(f"Validation Accuracy: {best_val_accuracy:.1%}")
     print(f"Test Accuracy: {test_accuracy:.1%}")
-
-    with open("textgrad_accuracy_history.json", "w") as f:
+ 
+    accuracy_filename = f"textgrad_accuracy_history_{job_id}.json"
+    with open(accuracy_filename, "w") as f:
         json.dump(all_results["accuracy_history"], f, indent=2)
 
-    with open("textgrad_training_summary.json", "w") as f:
+    summary_filename = f"textgrad_training_summary_{job_id}.json"
+    with open(summary_filename, "w") as f:
         json.dump({
             "best_format": all_results["best_format"],
             "best_system_prompt": all_results["best_system_prompt"],

@@ -22,6 +22,8 @@ def main():
     parser.add_argument("--optimize-mode", type=str, default="prompt",
                        choices=["format", "prompt", "both"],
                        help="What to optimize: 'format' (serialization only), 'prompt' (generator prompt only), or 'both'")
+    parser.add_argument("--job-id", type=str, default=None,
+                   help="Unique job identifier for output files")
     
     args = parser.parse_args()
 
@@ -72,7 +74,8 @@ def main():
             seen_formats=set(),
             provider=provider,
             dataset_name=args.dataset,
-            optimize_mode=args.optimize_mode
+            optimize_mode=args.optimize_mode,
+            job_id=args.job_id
         )
 
         print("\n" + "="*70)
@@ -81,7 +84,7 @@ def main():
         print(f"Optimization mode: {args.optimize_mode}")
         print(f"Best validation accuracy: {results['best_val_accuracy']:.1%}")
         print(f"Final test accuracy: {results['final_test_accuracy']:.1%}")
-        print(f"Best format: {results['best_format']}")
+        print(f"Best prompt: {results['best_system_prompt']}")
         
         print("\nFiles saved:")
         print("- textgrad_feedback_logs.json (detailed feedback)")

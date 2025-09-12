@@ -14,6 +14,7 @@ def evaluate(model, data, extract_prediction):
             correct += 1
     return correct / len(data)
 
+
 def extract_prediction(pred_text: str, dataset_name: str = "iris") -> str:
     config = get_dataset_config(dataset_name)
     pred_text = pred_text.lower().strip()
@@ -22,13 +23,18 @@ def extract_prediction(pred_text: str, dataset_name: str = "iris") -> str:
         if pred_text == class_name.lower() or class_name.lower() in pred_text:
             return class_name.lower()
     
-    
+   
     if dataset_name.lower() == "heart":
-        if dataset_name.lower() == "heart":
-            if any(word in pred_text for word in ["disease", "positive", "yes", "1", "cardiac", "abnormal"]):
-                return "heart_disease"  
-            elif any(word in pred_text for word in ["no_disease", "healthy", "negative", "no", "0", "normal"]):
-                return "normal" 
+        if any(word in pred_text for word in ["disease", "positive", "yes", "1", "cardiac", "abnormal"]):
+            return "heart_disease"  
+        elif any(word in pred_text for word in ["no_disease", "healthy", "negative", "no", "0", "normal"]):
+            return "normal"
+    
+    elif dataset_name.lower() == "synthetic":
+        if any(word in pred_text for word in ["class_1", "class 1", "1", "one"]):
+            return "class_1"
+        elif any(word in pred_text for word in ["class_0", "class 0", "0", "zero"]):
+            return "class_0"
     
     return "unknown"
 
@@ -38,8 +44,13 @@ def safe_format(template: str, sample: dict, dataset_name: str = "iris") -> str:
     except Exception as e:
         print(f"Format error: {e}")
         config = get_dataset_config(dataset_name)
-        values = [str(sample.get(feature, "N/A")) for feature in config["features"]]
-        return ",".join(values)
+        
+        if dataset_name.lower() == "synthetic":
+            values = [f"{sample.get(feature, 0.0):.3f}" for feature in config["features"]]
+            return ", ".join([f"{feat}: {val}" for feat, val in zip(config["features"], values)])
+        else:
+            values = [str(sample.get(feature, "N/A")) for feature in config["features"]]
+            return ", ".join(values)
 
 def validate_format(format_string: str, sample: dict) -> tuple:
     try:

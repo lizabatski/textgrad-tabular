@@ -7,7 +7,7 @@ class SimpleLogger:
         self.feedback_log = []
         
     def log_step(self, epoch, batch, sample, formatted_input, prediction, 
-                 true_label, format_before, raw_feedback, format_after, correct):
+                 true_label, prompt_before, raw_feedback, prompt_after, correct):
         
         
         feedback_match = re.search(r'<FEEDBACK>(.*?)</FEEDBACK>', raw_feedback, re.DOTALL)
@@ -20,11 +20,13 @@ class SimpleLogger:
             "formatted_input": formatted_input,
             "prediction": prediction,
             "true_label": true_label,
-            "serialization_format_before": format_before,
-            "raw_feedback": raw_feedback,
+            "system_prompt_before": prompt_before, 
+            #"serialization_format_before": format_before,
+            #"raw_feedback": raw_feedback,
             "extracted_feedback": extracted_feedback,
             "correct": correct,
-            "serialization_format_after": format_after
+            "system_prompt_after": prompt_after
+            #"serialization_format_after": format_after
         }
         self.feedback_log.append(entry)
         
