@@ -24,6 +24,46 @@ def load_iris_dataset(path: str = "datasets/Iris.csv", seed: int = 42) -> Tuple[
     n = len(data)
     return data[:int(0.6*n)], data[int(0.6*n):int(0.8*n)], data[int(0.8*n):]
 
+def load_bio_sample_dataset(path: str = "datasets/Iris.csv", seed: int = 42) -> Tuple[List[Tuple[dict, str]], List[Tuple[dict, str]], List[Tuple[dict, str]]]:
+    """Load biological sample dataset for classification"""
+    df = pd.read_csv(path)
+    random.seed(seed)
+    
+    # Define mappings for masking
+    feature_mapping = {
+        "sepal_length": "feature_0",
+        "sepal_width": "feature_1", 
+        "petal_length": "feature_2",
+        "petal_width": "feature_3"
+    }
+    
+    class_mapping = {
+        "setosa": "class_0",
+        "versicolor": "class_1",
+        "virginica": "class_2"
+    }
+    
+    data = []
+    for _, row in df.iterrows():
+        # Create masked features
+        features = {
+            "feature_0": row.SepalLengthCm,  # originally sepal_length
+            "feature_1": row.SepalWidthCm,   # originally sepal_width
+            "feature_2": row.PetalLengthCm,  # originally petal_length
+            "feature_3": row.PetalWidthCm,   # originally petal_width
+        }
+        
+        # Create masked label
+        original_species = row.Species.split("-")[-1].lower()
+        masked_label = class_mapping[original_species]
+        
+        data.append((features, masked_label))
+    
+    random.shuffle(data)
+    
+    n = len(data)
+    return data[:int(0.6*n)], data[int(0.6*n):int(0.8*n)], data[int(0.8*n):]
+
 def load_heart_dataset(path: str = "datasets/heart.csv", seed: int = 42) -> Tuple[List[Tuple[dict, str]], List[Tuple[dict, str]], List[Tuple[dict, str]]]:
     df = pd.read_csv(path)
     random.seed(seed)
@@ -77,8 +117,9 @@ def load_synthetic_dataset(path: str = "datasets/synthetic_dataset.csv", seed: i
 def get_dataset_loader(dataset_name: str):
     loaders = {
         "iris": load_iris_dataset,
+        "bio_sample": load_bio_sample_dataset,  # Changed from iris_masked
         "heart": load_heart_dataset,
-        "synthetic": load_synthetic_dataset  
+        "synthetic": load_synthetic_dataset
     }
     
     if dataset_name.lower() not in loaders:
@@ -92,11 +133,11 @@ def load_dataset(dataset_name: str, dataset_path: str = None, seed: int = 42) ->
     if dataset_path is None:
         default_paths = {
             "iris": "datasets/Iris.csv",
+            "bio_sample": "datasets/Iris.csv",  
             "heart": "datasets/heart.csv",
-            "synthetic": "datasets/synthetic_dataset.csv" 
+            "synthetic": "datasets/synthetic_dataset.csv"
         }
         dataset_path = default_paths[dataset_name.lower()]
-    
     
     if not os.path.exists(dataset_path):
         raise FileNotFoundError(f"Dataset file not found: {dataset_path}")

@@ -19,6 +19,23 @@ Choose the most relevant approach for fixing this specific error and provide a c
 """
 },
 
+"bio_sample": {
+    "features": ["feature_0", "feature_1", "feature_2", "feature_3"],
+    "classes": ["class_0", "class_1", "class_2"],
+    "default_format": "Feature 0: {feature_0:.1f}, Feature 1: {feature_1:.1f}, Feature 2: {feature_2:.1f}, Feature 3: {feature_3:.1f}",
+    "system_prompt": """Classify this data sample as: class_0, class_1, or class_2.""",
+    "evaluator_prompt": """Evaluate this data classification result. If incorrect, suggest how to improve the classification prompt.
+
+Consider approaches like:
+- Creative reasoning about biological relationships
+- Pattern discovery with feature combinations  
+- Contextual thinking using domain knowledge
+- Better confidence handling for uncertain cases
+- Holistic analysis of the complete measurement profile
+
+Choose the most relevant approach for fixing this specific error and provide a concrete suggestion."""
+},
+
 "synthetic": {
     "features": ["feature_0", "feature_1", "feature_2", "feature_3"],
     "classes": ["class_0", "class_1", "class_2"],  #

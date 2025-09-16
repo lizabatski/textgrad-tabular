@@ -20,3 +20,5 @@ logs/
 results/
 old/
 old_results/
+
+validate_curve.py
